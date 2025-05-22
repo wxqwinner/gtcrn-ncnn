@@ -26,7 +26,7 @@ class GTCRNNCNN:
         self.hop_length = hop_length
         self.nfft = nfft
         self.win = np.hanning(512) ** 0.5
-        self.mix = np.zeros([257, 1, 2], dtype=np.float32)
+        self.mix = np.zeros([2, 257], dtype=np.float32)
 
     def __call__(self, frame):
         x = np.concatenate((self.in_buffer, frame), axis=1)
@@ -34,8 +34,8 @@ class GTCRNNCNN:
         x0 = x * self.win
         spec = np.fft.rfft(x0).astype("complex64")
 
-        self.mix[:, 0, 0] = spec.real.flatten()
-        self.mix[:, 0, 1] = spec.imag.flatten()
+        self.mix[0, :] = spec.real.flatten()
+        self.mix[1, :] = spec.imag.flatten()
 
         ex = self.net.create_extractor()
         ex.input("in0", ncnn.Mat(self.mix).clone())
@@ -51,7 +51,6 @@ class GTCRNNCNN:
         self.conv_cache = np.array(out1)
         self.tra_cache = np.array(out2)
         self.inter_cache = np.array(out3)
-
 
         spec = out[0, :] + 1j * out[1, :]
         enhanced = np.fft.irfft(spec.reshape(1, -1)) * self.win
